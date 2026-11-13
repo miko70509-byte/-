@@ -1,0 +1,100 @@
+# 1. Клонируем ваш репозиторий и переходим в него
+gh repo clone miko70509-byte/- kanban-repo
+cd kanban-repo
+
+# 2. Обновляем README с правилами Kanban
+cat << 'EOF' > README.md
+# Управление проектом (Kanban)
+
+## Правила доски
+1. **WIP-лимит:** Не более 2 задач в колонке `In Progress` на одного исполнителя.
+2. **Приоритеты:** Задачи берутся строго по приоритету (`P0` -> `P3`).
+3. **Зависимости:** Заблокированные задачи помечаются лейблом `status: blocked` с указанием номера блокирующей задачи (`Blocked by #...`).
+EOF
+
+# 3. Создаем шаблоны задач с Definition of Done и декомпозицией
+mkdir -p .github/ISSUE_TEMPLATE
+
+cat << 'EOF' > .github/ISSUE_TEMPLATE/task.yml
+name: Задача (Task)
+description: Создание новой задачи с обязательным Definition of Done
+title: "[Task]: "
+labels: ["type: task"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Описание задачи
+    validations:
+      required: true
+  - type: input
+    id: parent_epic
+    attributes:
+      label: Родительский Epic (Декомпозиция)
+      placeholder: "Например: #1"
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Зависимости (Dependencies)
+      placeholder: |
+        - Blocked by #...
+        - Blocks #...
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of Done (DoD)
+      options:
+        - label: Код написан и соответствует стандартам
+          required: true
+        - label: Написаны и проходят тесты
+          required: true
+        - label: Проведено Code Review и получен Approve
+          required: true
+        - label: Изменения смержены в main и проверены
+          required: true
+EOF
+
+cat << 'EOF' > .github/ISSUE_TEMPLATE/epic.yml
+name: Эпик (Epic)
+description: Крупная цель, разбиваемая на подзадачи
+title: "[Epic]: "
+labels: ["type: epic"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Цель эпика
+    validations:
+      required: true
+  - type: textarea
+    id: decomposition
+    attributes:
+      label: Декомпозиция (Список подзадач)
+      placeholder: |
+        - [ ] #2 Подзадача 1
+        - [ ] #3 Подзадача 2
+EOF
+
+# 4. Отправляем файлы в ваш репозиторий
+git add .
+git commit -m "feat: setup kanban templates and rules"
+git push origin main
+
+# 5. Настраиваем метки (Labels) в репозитории
+for label in bug documentation duplicate enhancement "good first issue" "help wanted" invalid question wontfix; do
+  gh label delete "$label" -R miko70509-byte/- --yes 2>/dev/null || true
+done
+
+gh label create "type: epic" -R miko70509-byte/- --color "3E4B9E" --description "Крупная цель или фича"
+gh label create "type: task" -R miko70509-byte/- --color "1D76DB" --description "Техническая задача"
+gh label create "type: bug" -R miko70509-byte/- --color "D73A4A" --description "Ошибка или дефект"
+gh label create "status: blocked" -R miko70509-byte/- --color "B60205" --description "Заблокировано другой задачей"
+gh label create "status: ready" -R miko70509-byte/- --color "006B75" --description "Готово к работе"
+
+# 6. Создаем Kanban-доску (Project) и привязываем к репозиторию
+gh project create --owner miko70509-byte --title "Kanban Board"
+
+# 7. Создаем тестовый Эпик и две зависимые задачи
+gh issue create -R miko70509-byte/- --title "[Epic]: Базовая настройка проекта" --body "- [ ] #2 Инициализация БД\n- [ ] #3 Настройка API" --label "type: epic"
+gh issue create -R miko70509-byte/- --title "[Task]: Инициализация БД" --body "Родительский эпик: #1" --label "type: task,status: ready"
+gh issue create -R miko70509-byte/- --title "[Task]: Настройка API" --body "Родительский эпик: #1\nBlocked by #2" --label "type: task,status: blocked"
