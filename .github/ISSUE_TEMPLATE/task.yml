@@ -1,0 +1,36 @@
+name: Задача (Task)
+description: Создание новой задачи с обязательным Definition of Done
+title: "[Task]: "
+labels: ["type: task"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Описание задачи
+    validations:
+      required: true
+  - type: input
+    id: parent_epic
+    attributes:
+      label: Родительский Epic (Декомпозиция)
+      placeholder: "Например: #1"
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Зависимости (Dependencies)
+      placeholder: |
+        - Blocked by #...
+        - Blocks #...
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of Done (DoD)
+      options:
+        - label: Код написан и соответствует стандартам
+          required: true
+        - label: Написаны и проходят тесты
+          required: true
+        - label: Проведено Code Review и получен Approve
+          required: true
+        - label: Изменения смержены в main и проверены
+          required: true
